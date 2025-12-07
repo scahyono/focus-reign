@@ -173,9 +173,9 @@ class FloatingText {
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
+        this.boardSection = document.getElementById('board-section');
         this.ctx = this.canvas.getContext('2d');
-        this.width = this.canvas.width = window.innerWidth;
-        this.height = this.canvas.height = window.innerHeight;
+        this.resizeCanvas();
 
         this.map = [];
         this.units = [];
@@ -220,13 +220,21 @@ class Game {
         requestAnimationFrame(this.loop);
 
         window.addEventListener('resize', () => {
-            this.width = this.canvas.width = window.innerWidth;
-            this.height = this.canvas.height = window.innerHeight;
+            this.resizeCanvas();
             this.calculateLayout();
         });
 
         // Flag for first interaction (to play war trumpet)
         this.firstInteraction = false;
+    }
+
+    resizeCanvas() {
+        const rect = this.boardSection?.getBoundingClientRect();
+        const targetWidth = rect?.width ?? window.innerWidth;
+        const targetHeight = rect?.height ?? window.innerHeight;
+
+        this.width = this.canvas.width = targetWidth;
+        this.height = this.canvas.height = targetHeight;
     }
 
     getRandomFaction() {
