@@ -173,9 +173,9 @@ class FloatingText {
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
+        this.boardSection = document.getElementById('board-section');
         this.ctx = this.canvas.getContext('2d');
-        this.width = this.canvas.width = window.innerWidth;
-        this.height = this.canvas.height = window.innerHeight;
+        this.resizeCanvas();
 
         this.map = [];
         this.units = [];
@@ -214,19 +214,28 @@ class Game {
         this.setupInput();
         this.renderFactionList();
         this.updateUI();
+        this.updateSelectionUI();
 
         // Start Game Loop
         this.loop = this.loop.bind(this);
         requestAnimationFrame(this.loop);
 
         window.addEventListener('resize', () => {
-            this.width = this.canvas.width = window.innerWidth;
-            this.height = this.canvas.height = window.innerHeight;
+            this.resizeCanvas();
             this.calculateLayout();
         });
 
         // Flag for first interaction (to play war trumpet)
         this.firstInteraction = false;
+    }
+
+    resizeCanvas() {
+        const rect = this.boardSection?.getBoundingClientRect();
+        const targetWidth = rect?.width ?? window.innerWidth;
+        const targetHeight = rect?.height ?? window.innerHeight;
+
+        this.width = this.canvas.width = targetWidth;
+        this.height = this.canvas.height = targetHeight;
     }
 
     getRandomFaction() {
@@ -242,7 +251,8 @@ class Game {
         FACTIONS.forEach(faction => {
             const item = document.createElement('div');
             item.className = 'legend-item faction-item';
-            item.innerHTML = `<span class="icon">${faction.player}</span> vs <span class="icon">${faction.enemy}</span> — ${faction.label}`;
+            item.innerHTML = `<span class="icon">${faction.player}</span><span class="vs">/</span><span class="icon">${faction.enemy}</span>`;
+            item.title = faction.label;
             listEl.appendChild(item);
         });
     }
@@ -286,7 +296,7 @@ class Game {
 
     calculateLayout() {
         const paddingX = 40;
-        const paddingY = 160;
+        const paddingY = 40;
         const availableWidth = this.width - paddingX;
         const availableHeight = this.height - paddingY;
         const tileW = availableWidth / MAP_WIDTH;
@@ -556,8 +566,12 @@ class Game {
     }
 
     getTileAt(screenX, screenY) {
-        const x = Math.floor((screenX - this.offsetX) / this.tileSize);
-        const y = Math.floor((screenY - this.offsetY) / this.tileSize);
+        const rect = this.canvas.getBoundingClientRect();
+        const canvasX = screenX - rect.left;
+        const canvasY = screenY - rect.top;
+
+        const x = Math.floor((canvasX - this.offsetX) / this.tileSize);
+        const y = Math.floor((canvasY - this.offsetY) / this.tileSize);
 
         if (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT) {
             return this.map[y][x];
@@ -606,7 +620,7 @@ class Game {
 
     deselectAll() {
         this.selectedUnit = null;
-        document.getElementById('selection-panel').classList.add('hidden');
+        this.updateSelectionUI();
     }
 
     moveUnit(unit, tx, ty) {
@@ -972,17 +986,19 @@ class Game {
     }
 
     updateSelectionUI() {
-        const panel = document.getElementById('selection-panel');
         const nameEl = document.getElementById('selection-name');
+        const subtitleEl = document.getElementById('selection-subtitle');
         const detailsEl = document.getElementById('selection-details');
 
         if (this.selectedUnit) {
-            panel.classList.remove('hidden');
             const u = this.selectedUnit;
             nameEl.innerText = UNITS[u.type].name;
+            subtitleEl.innerText = "Status";
             detailsEl.innerHTML = `Moves: ${u.movesLeft}/${u.maxMoves}`;
         } else {
-            panel.classList.add('hidden');
+            nameEl.innerText = "No unit selected";
+            subtitleEl.innerText = "Tap a unit to view its status.";
+            detailsEl.innerHTML = "No unit selected.";
         }
     }
 
