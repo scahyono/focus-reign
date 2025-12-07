@@ -61,6 +61,30 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
+#branding-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+}
+
+.branding-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.game-title {
+    font-size: 1.4em;
+    letter-spacing: 0.5px;
+}
+
+.game-tagline {
+    font-size: 0.9em;
+    color: #bdbdbd;
+}
+
 #resource-bar {
     display: flex;
     gap: 20px;
@@ -99,8 +123,6 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding-left: 12px;
-    border-left: 1px solid var(--border-color);
 }
 
 #faction-display .icon {

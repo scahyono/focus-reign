@@ -14,6 +14,19 @@
 <body>
     <div id="game-container">
         <section id="top-section">
+            <div id="branding-bar" class="panel">
+                <div class="branding-titles">
+                    <h1 class="game-title">Pocket Reign</h1>
+                    <p class="game-tagline">Claim the realm before your rival.</p>
+                </div>
+                <div id="faction-display" class="faction">
+                    <span id="player-faction-icon" class="icon"></span>
+                    <span class="vs">vs</span>
+                    <span id="enemy-faction-icon" class="icon"></span>
+                    <span id="faction-label" class="label"></span>
+                </div>
+            </div>
+
             <div id="resource-bar" class="panel">
                 <div class="resource">
                     <span class="icon">💰</span>
@@ -27,12 +40,6 @@
                 </div>
                 <div class="turn-info">
                     Turn: <span id="turn-display">1</span>
-                </div>
-                <div id="faction-display" class="faction">
-                    <span id="player-faction-icon" class="icon"></span>
-                    <span class="vs">vs</span>
-                    <span id="enemy-faction-icon" class="icon"></span>
-                    <span id="faction-label" class="label"></span>
                 </div>
             </div>
 
