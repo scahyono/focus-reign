@@ -294,7 +294,7 @@ class Game {
 
     calculateLayout() {
         const paddingX = 40;
-        const paddingY = 160;
+        const paddingY = 40;
         const availableWidth = this.width - paddingX;
         const availableHeight = this.height - paddingY;
         const tileW = availableWidth / MAP_WIDTH;
