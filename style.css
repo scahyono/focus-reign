@@ -190,38 +190,41 @@ canvas {
 #selection-panel {
     width: 100%;
     transition: opacity 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.selection-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.selection-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 #selection-name {
     font-size: 1.1em;
-    margin-bottom: 10px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 5px;
+}
+
+#selection-subtitle {
+    font-size: 0.9em;
+    color: #bdbdbd;
 }
 
 #selection-details {
-    font-size: 0.9em;
+    font-size: 0.95em;
     line-height: 1.5;
-    margin-bottom: 15px;
-}
-
-#action-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.bottom-right {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-    min-width: 240px;
-}
-
-#turn-controls {
-    pointer-events: auto;
-    align-self: flex-start;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 12px;
 }
 
 #notifications {

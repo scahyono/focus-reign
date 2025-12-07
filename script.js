@@ -214,6 +214,7 @@ class Game {
         this.setupInput();
         this.renderFactionList();
         this.updateUI();
+        this.updateSelectionUI();
 
         // Start Game Loop
         this.loop = this.loop.bind(this);
@@ -618,7 +619,7 @@ class Game {
 
     deselectAll() {
         this.selectedUnit = null;
-        document.getElementById('selection-panel').classList.add('hidden');
+        this.updateSelectionUI();
     }
 
     moveUnit(unit, tx, ty) {
@@ -984,17 +985,19 @@ class Game {
     }
 
     updateSelectionUI() {
-        const panel = document.getElementById('selection-panel');
         const nameEl = document.getElementById('selection-name');
+        const subtitleEl = document.getElementById('selection-subtitle');
         const detailsEl = document.getElementById('selection-details');
 
         if (this.selectedUnit) {
-            panel.classList.remove('hidden');
             const u = this.selectedUnit;
             nameEl.innerText = UNITS[u.type].name;
+            subtitleEl.innerText = "Status";
             detailsEl.innerHTML = `Moves: ${u.movesLeft}/${u.maxMoves}`;
         } else {
-            panel.classList.add('hidden');
+            nameEl.innerText = "No unit selected";
+            subtitleEl.innerText = "Tap a unit to view its status.";
+            detailsEl.innerHTML = "No unit selected.";
         }
     }
 
