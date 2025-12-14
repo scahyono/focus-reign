@@ -153,7 +153,8 @@ class DecimationProtocol {
             lastGameAt: null,
             delayStartedAt: null,
             delayDurationMs: 0,
-            lastTierPlayed: 10
+            lastTierPlayed: 10,
+            lastCelebratedGameAt: null
         };
         this.timerInterval = null;
 
@@ -165,6 +166,8 @@ class DecimationProtocol {
         this.tierResetTimeEl = document.getElementById('tier-reset-time');
         this.delayTimerEl = document.getElementById('delay-timer');
         this.playAgainBtn = document.getElementById('restart-btn');
+        this.celebrationOverlay = document.getElementById('celebration-overlay');
+        this.celebrationContinueBtn = document.getElementById('celebration-continue');
         this.forcedModal = false;
     }
 
@@ -172,6 +175,7 @@ class DecimationProtocol {
         this.loadState();
         this.applyResetIfNeeded();
         this.bindTierInfoToggle();
+        this.bindCelebrationDismiss();
         this.refreshDelayUI();
         this.updateResetInfo();
     }
@@ -198,13 +202,94 @@ class DecimationProtocol {
 
     applyResetIfNeeded() {
         const now = this.getNow();
-        if (this.state.lastGameAt && now - this.state.lastGameAt >= 3 * 60 * 60 * 1000) {
+        const lastGameAt = this.state.lastGameAt;
+        const eligibleForReset = lastGameAt && now - lastGameAt >= 3 * 60 * 60 * 1000;
+
+        if (eligibleForReset && this.state.tier < 10) {
             this.state.tier = 10;
             this.state.delayStartedAt = null;
             this.state.delayDurationMs = 0;
             this.saveState();
         }
+
+        const celebrationPending = eligibleForReset && lastGameAt && this.state.lastCelebratedGameAt !== lastGameAt;
+        if (celebrationPending) {
+            this.state.lastCelebratedGameAt = lastGameAt;
+            this.saveState();
+            this.showCelebration();
+        }
         this.updateResetInfo();
+    }
+
+    bindCelebrationDismiss() {
+        if (this.celebrationContinueBtn) {
+            this.celebrationContinueBtn.addEventListener('click', () => this.hideCelebration());
+        }
+        if (this.celebrationOverlay) {
+            this.celebrationOverlay.addEventListener('click', (event) => {
+                if (event.target === this.celebrationOverlay) {
+                    this.hideCelebration();
+                }
+            });
+        }
+    }
+
+    showCelebration() {
+        if (!this.celebrationOverlay) return;
+        this.celebrationOverlay.classList.remove('hidden');
+        document.body.classList.add('celebration-active');
+        this.playCelebrationSound();
+    }
+
+    hideCelebration() {
+        if (!this.celebrationOverlay) return;
+        this.celebrationOverlay.classList.add('hidden');
+        document.body.classList.remove('celebration-active');
+    }
+
+    playCelebrationSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            const notes = [
+                { freq: 523.25, time: 0, duration: 0.18 }, // C5
+                { freq: 659.25, time: 0.16, duration: 0.2 }, // E5
+                { freq: 784.0, time: 0.34, duration: 0.22 }, // G5
+                { freq: 1046.5, time: 0.56, duration: 0.3 } // C6
+            ];
+
+            notes.forEach(note => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.value = note.freq;
+                gain.gain.setValueAtTime(0, now + note.time);
+                gain.gain.linearRampToValueAtTime(0.25, now + note.time + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + note.time + note.duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now + note.time);
+                osc.stop(now + note.time + note.duration + 0.05);
+            });
+
+            const shimmer = audioCtx.createOscillator();
+            const shimmerGain = audioCtx.createGain();
+            shimmer.type = 'triangle';
+            shimmer.frequency.setValueAtTime(1200, now);
+            shimmer.frequency.exponentialRampToValueAtTime(600, now + 0.7);
+            shimmerGain.gain.setValueAtTime(0.0001, now);
+            shimmerGain.gain.exponentialRampToValueAtTime(0.12, now + 0.05);
+            shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+            shimmer.connect(shimmerGain);
+            shimmerGain.connect(audioCtx.destination);
+            shimmer.start(now);
+            shimmer.stop(now + 0.8);
+        } catch (e) {
+            console.warn('Celebration audio not supported', e);
+        }
     }
 
     bindTierInfoToggle() {
@@ -315,9 +400,9 @@ class DecimationProtocol {
 
     updateDelayTexts(previousTier, nextTier) {
         if (this.tierDropTextEl) {
-            this.tierDropTextEl.innerText = `Focus Rank ${previousTier} → Rank ${nextTier}`;
+            this.tierDropTextEl.innerText = `Focus Rank: ${nextTier} (was ${previousTier})`;
         } else if (this.tierDropEl) {
-            this.tierDropEl.innerText = `Focus Rank ${previousTier} → Rank ${nextTier}`;
+            this.tierDropEl.innerText = `Focus Rank: ${nextTier} (was ${previousTier})`;
         }
         this.updateResetInfo();
     }
