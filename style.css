@@ -360,6 +360,87 @@ canvas {
     color: white;
 }
 
+.delay-panel {
+    margin-top: 16px;
+    background: rgba(20, 20, 20, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    text-align: center;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tier-drop {
+    font-weight: 700;
+    color: #ffb74d;
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255, 183, 77, 0.08);
+    border: 1px solid rgba(255, 183, 77, 0.2);
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tier-drop:hover,
+.tier-drop:focus-visible {
+    background: rgba(255, 183, 77, 0.15);
+    border-color: rgba(255, 183, 77, 0.35);
+    outline: none;
+}
+
+.tier-drop .tier-chevron {
+    font-size: 0.75em;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+}
+
+.tier-drop.expanded .tier-chevron {
+    transform: rotate(180deg);
+}
+
+.delay-timer {
+    font-size: 2.4em;
+    letter-spacing: 1px;
+    font-weight: 800;
+}
+
+.tier-info {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: left;
+    color: #e0e0e0;
+}
+
+.tier-description {
+    margin: 0 0 6px;
+    font-size: 0.95em;
+}
+
+.tier-reset {
+    margin: 0;
+    font-size: 0.9em;
+    color: #c8d5ff;
+}
+
+.btn.disabled,
+.plain-link.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+body.delay-active #game-container {
+    filter: blur(2px);
+    pointer-events: none;
+}
+
 /* Legend */
 .legend-grid {
     display: grid;

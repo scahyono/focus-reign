@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pocket Reign</title>
+    <title>Focus Reign</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
@@ -16,7 +16,7 @@
         <section id="top-section">
             <div id="branding-bar" class="panel">
                 <div class="branding-titles">
-                    <h1 class="game-title">Pocket Reign</h1>
+                    <h1 class="game-title">Focus Reign</h1>
                     <p class="game-tagline">Claim the realm before your rival.</p>
                 </div>
                 <div id="faction-display" class="faction">
@@ -132,7 +132,18 @@
                     <span id="faction-cta-text">Accept Mission</span>
                     <span class="cta-halo" aria-hidden="true">😇</span>
                 </a>
-                <a id="restart-btn" class="plain-link" href="#">Play Again</a>
+                <div id="delay-panel" class="panel delay-panel">
+                    <p id="tier-drop" class="tier-drop" role="button" tabindex="0" aria-expanded="false">
+                        <span id="tier-drop-text" class="tier-drop-text">Focus Rank 10 → Rank 9</span>
+                        <span class="tier-chevron" aria-hidden="true">▾</span>
+                    </p>
+                    <div id="tier-info" class="tier-info hidden" aria-live="polite">
+                        <p id="tier-description" class="tier-description">Every session drops your Focus Rank and enforces the Constant Decimation cooldown.</p>
+                        <p class="tier-reset">Next reset to Rank 10: <span id="tier-reset-time">--</span></p>
+                    </div>
+                    <div class="delay-timer" id="delay-timer">00:00</div>
+                    <a id="restart-btn" class="btn primary large disabled" href="#" aria-disabled="true">Play Again</a>
+                </div>
             </div>
         </div>
     </div>

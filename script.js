@@ -1,5 +1,5 @@
 /**
- * Pocket Reign - Territory Edition
+ * Focus Reign - Territory Edition
  * 
  * Core Logic:
  * - Game Loop (requestAnimationFrame)
@@ -118,6 +118,293 @@ const UNITS = {
     WARRIOR: { name: 'Warrior', symbol: '⚔️', moves: 2, cost: 50, attack: 5, defense: 3 }
 };
 
+const FOCUS_RANK_STORAGE_KEY = 'pr_focus_rank_state';
+const LEGACY_SELF_CONTROL_STORAGE_KEY = 'pr_self_control_state';
+
+class TimeService {
+    constructor() {
+        this.offsetMs = 0;
+        this.usingFallback = false;
+    }
+
+    async init() {
+        try {
+            const response = await fetch('https://worldtimeapi.org/api/timezone/Etc/UTC');
+            const data = await response.json();
+            const serverTime = new Date(data.utc_datetime).getTime();
+            this.offsetMs = serverTime - Date.now();
+        } catch (error) {
+            console.error('Failed to fetch secure time, falling back to local clock.', error);
+            this.offsetMs = 0;
+            this.usingFallback = true;
+        }
+    }
+
+    now() {
+        return Date.now() + this.offsetMs;
+    }
+}
+
+class DecimationProtocol {
+    constructor(timeService) {
+        this.timeService = timeService;
+        this.state = {
+            tier: 10,
+            lastGameAt: null,
+            delayStartedAt: null,
+            delayDurationMs: 0,
+            lastTierPlayed: 10
+        };
+        this.timerInterval = null;
+
+        this.tierDropEl = document.getElementById('tier-drop');
+        this.tierDropTextEl = document.getElementById('tier-drop-text');
+        this.tierChevronEl = this.tierDropEl ? this.tierDropEl.querySelector('.tier-chevron') : null;
+        this.tierInfoEl = document.getElementById('tier-info');
+        this.tierDescriptionEl = document.getElementById('tier-description');
+        this.tierResetTimeEl = document.getElementById('tier-reset-time');
+        this.delayTimerEl = document.getElementById('delay-timer');
+        this.playAgainBtn = document.getElementById('restart-btn');
+        this.forcedModal = false;
+    }
+
+    initialize() {
+        this.loadState();
+        this.applyResetIfNeeded();
+        this.bindTierInfoToggle();
+        this.refreshDelayUI();
+        this.updateResetInfo();
+    }
+
+    loadState() {
+        try {
+            let stored = localStorage.getItem(FOCUS_RANK_STORAGE_KEY) || localStorage.getItem(LEGACY_SELF_CONTROL_STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                this.state = { ...this.state, ...parsed };
+            }
+        } catch (e) {
+            console.warn('Unable to load stored focus rank state', e);
+        }
+    }
+
+    saveState() {
+        localStorage.setItem(FOCUS_RANK_STORAGE_KEY, JSON.stringify(this.state));
+    }
+
+    getNow() {
+        return this.timeService.now();
+    }
+
+    applyResetIfNeeded() {
+        const now = this.getNow();
+        if (this.state.lastGameAt && now - this.state.lastGameAt >= 3 * 60 * 60 * 1000) {
+            this.state.tier = 10;
+            this.state.delayStartedAt = null;
+            this.state.delayDurationMs = 0;
+            this.saveState();
+        }
+        this.updateResetInfo();
+    }
+
+    bindTierInfoToggle() {
+        if (!this.tierDropEl) return;
+        const toggle = () => this.toggleTierInfo();
+        this.tierDropEl.addEventListener('click', toggle);
+        this.tierDropEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggle();
+            }
+        });
+    }
+
+    toggleTierInfo() {
+        if (!this.tierInfoEl || !this.tierDropEl) return;
+        const willShow = this.tierInfoEl.classList.contains('hidden');
+        this.tierInfoEl.classList.toggle('hidden');
+        this.tierDropEl.setAttribute('aria-expanded', String(willShow));
+        this.tierDropEl.classList.toggle('expanded', willShow);
+        if (willShow) {
+            this.updateResetInfo();
+        }
+    }
+
+    updateResetInfo() {
+        if (!this.tierResetTimeEl) return;
+        const now = this.getNow();
+        if (this.tierDescriptionEl) {
+            this.tierDescriptionEl.innerText = 'Every session lowers your Focus Rank and enforces a mandatory cooldown.';
+        }
+
+        if (!this.state.lastGameAt) {
+            this.tierResetTimeEl.innerText = 'No recent session — Rank 10 is active.';
+            return;
+        }
+
+        const resetAt = this.state.lastGameAt + 3 * 60 * 60 * 1000;
+        const remainingMs = resetAt - now;
+        if (remainingMs <= 0) {
+            this.tierResetTimeEl.innerText = 'Eligible now — 3 hours of abstinence restores Rank 10.';
+            return;
+        }
+
+        const resetTimeText = new Date(resetAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+        const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+        const parts = [];
+        if (hours > 0) parts.push(`${hours}h`);
+        parts.push(`${minutes}m`);
+        this.tierResetTimeEl.innerText = `${resetTimeText} (in ${parts.join(' ')})`;
+    }
+
+    getDelayForTier(nextTier) {
+        if (nextTier >= 7) return 60 * 1000;
+        if (nextTier >= 4) return 3 * 60 * 1000;
+        if (nextTier >= 2) return 5 * 60 * 1000;
+        return 15 * 60 * 1000;
+    }
+
+    handleSessionComplete() {
+        const now = this.getNow();
+        const currentTier = this.state.tier || 10;
+        const nextTier = Math.max(currentTier - 1, 1);
+        const delayDurationMs = this.getDelayForTier(nextTier);
+
+        this.state.tier = nextTier;
+        this.state.lastTierPlayed = currentTier;
+        this.state.lastGameAt = now;
+        this.state.delayStartedAt = now;
+        this.state.delayDurationMs = delayDurationMs;
+        this.saveState();
+
+        this.presentDelay(currentTier, nextTier);
+        this.updateResetInfo();
+    }
+
+    isDelayActive() {
+        if (!this.state.delayStartedAt || !this.state.delayDurationMs) return false;
+        const now = this.getNow();
+        return now < this.state.delayStartedAt + this.state.delayDurationMs;
+    }
+
+    getRemainingMs() {
+        if (!this.state.delayStartedAt || !this.state.delayDurationMs) return 0;
+        const now = this.getNow();
+        const remaining = this.state.delayStartedAt + this.state.delayDurationMs - now;
+        return Math.max(0, remaining);
+    }
+
+    presentDelay(previousTier, nextTier) {
+        this.updateDelayTexts(previousTier, nextTier);
+        this.applyLock(true);
+        this.startTimer(previousTier, nextTier);
+    }
+
+    refreshDelayUI() {
+        if (this.isDelayActive()) {
+            const prevTier = this.state.lastTierPlayed || this.state.tier + 1;
+            this.updateDelayTexts(prevTier, this.state.tier);
+            this.applyLock(true);
+            this.startTimer(prevTier, this.state.tier);
+        } else {
+            this.applyLock(false);
+            this.setPlayAgainEnabled(true);
+        }
+    }
+
+    updateDelayTexts(previousTier, nextTier) {
+        if (this.tierDropTextEl) {
+            this.tierDropTextEl.innerText = `Focus Rank ${previousTier} → Rank ${nextTier}`;
+        } else if (this.tierDropEl) {
+            this.tierDropEl.innerText = `Focus Rank ${previousTier} → Rank ${nextTier}`;
+        }
+        this.updateResetInfo();
+    }
+
+    formatDuration(ms) {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    startTimer(previousTier, nextTier) {
+        if (this.timerInterval) clearInterval(this.timerInterval);
+
+        const tick = () => {
+            const remainingMs = this.getRemainingMs();
+            if (this.delayTimerEl) {
+                this.delayTimerEl.innerText = this.formatDuration(remainingMs);
+            }
+
+            this.updateResetInfo();
+
+            if (remainingMs <= 0) {
+                this.finishDelay(nextTier);
+            }
+        };
+
+        tick();
+        this.timerInterval = setInterval(tick, 1000);
+    }
+
+    finishDelay(nextTier) {
+        if (this.timerInterval) clearInterval(this.timerInterval);
+        this.timerInterval = null;
+        this.applyLock(false);
+        this.state.delayStartedAt = null;
+        this.state.delayDurationMs = 0;
+        this.saveState();
+        this.setPlayAgainEnabled(true);
+    }
+
+    applyLock(active) {
+        document.body.classList.toggle('delay-active', active);
+        const modal = document.getElementById('game-over-modal');
+
+        if (active) {
+            if (modal && modal.classList.contains('hidden')) {
+                this.forcedModal = true;
+                modal.classList.remove('hidden');
+                const title = document.getElementById('game-over-title');
+                const msg = document.getElementById('game-over-message');
+                if (title) {
+                    title.innerText = 'Mandatory Delay';
+                    title.style.color = '#ffb74d';
+                }
+                if (msg) {
+                    msg.innerText = 'A secure cooldown is in effect before your next session.';
+                }
+            }
+            this.setPlayAgainEnabled(false);
+        } else {
+            if (this.forcedModal && modal) {
+                modal.classList.add('hidden');
+                this.forcedModal = false;
+            }
+        }
+    }
+
+    setPlayAgainEnabled(enabled) {
+        if (!this.playAgainBtn) return;
+        if (enabled) {
+            this.playAgainBtn.classList.remove('disabled');
+            this.playAgainBtn.setAttribute('aria-disabled', 'false');
+        } else {
+            this.playAgainBtn.classList.add('disabled');
+            this.playAgainBtn.setAttribute('aria-disabled', 'true');
+        }
+    }
+
+    handlePlayAgain(callback) {
+        if (this.isDelayActive()) {
+            return;
+        }
+        callback();
+    }
+}
+
 // --- Classes ---
 
 class Tile {
@@ -182,7 +469,8 @@ class FloatingText {
 }
 
 class Game {
-    constructor() {
+    constructor(decimationProtocol) {
+        this.protocol = decimationProtocol;
         this.canvas = document.getElementById('gameCanvas');
         this.boardSection = document.getElementById('board-section');
         this.ctx = this.canvas.getContext('2d');
@@ -445,6 +733,10 @@ class Game {
         if (factionCtaText) {
             factionCtaText.textContent = this.faction.button || 'View Mission';
         }
+
+        if (this.protocol) {
+            this.protocol.handleSessionComplete();
+        }
     }
 
     playVictorySound() {
@@ -576,7 +868,7 @@ class Game {
         document.getElementById('recruit-btn').addEventListener('click', () => this.recruitUnit('player'));
         document.getElementById('restart-btn').addEventListener('click', (e) => {
             e.preventDefault();
-            location.reload();
+            this.protocol?.handlePlayAgain(() => location.reload());
         });
 
         const modal = document.getElementById('help-modal');
@@ -1143,6 +1435,12 @@ class Game {
     }
 }
 
-window.onload = () => {
-    const game = new Game();
+window.onload = async () => {
+    const timeService = new TimeService();
+    await timeService.init();
+    const protocol = new DecimationProtocol(timeService);
+    protocol.initialize();
+
+    const game = new Game(protocol);
+    protocol.refreshDelayUI();
 };
