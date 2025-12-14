@@ -1,5 +1,5 @@
 /**
- * Stoic Reign - Territory Edition
+ * Focus Reign - Territory Edition
  * 
  * Core Logic:
  * - Game Loop (requestAnimationFrame)
@@ -118,7 +118,8 @@ const UNITS = {
     WARRIOR: { name: 'Warrior', symbol: '⚔️', moves: 2, cost: 50, attack: 5, defense: 3 }
 };
 
-const SELF_CONTROL_STORAGE_KEY = 'pr_self_control_state';
+const FOCUS_RANK_STORAGE_KEY = 'pr_focus_rank_state';
+const LEGACY_SELF_CONTROL_STORAGE_KEY = 'pr_self_control_state';
 
 class TimeService {
     constructor() {
@@ -177,18 +178,18 @@ class DecimationProtocol {
 
     loadState() {
         try {
-            const stored = localStorage.getItem(SELF_CONTROL_STORAGE_KEY);
+            let stored = localStorage.getItem(FOCUS_RANK_STORAGE_KEY) || localStorage.getItem(LEGACY_SELF_CONTROL_STORAGE_KEY);
             if (stored) {
                 const parsed = JSON.parse(stored);
                 this.state = { ...this.state, ...parsed };
             }
         } catch (e) {
-            console.warn('Unable to load stored self-control state', e);
+            console.warn('Unable to load stored focus rank state', e);
         }
     }
 
     saveState() {
-        localStorage.setItem(SELF_CONTROL_STORAGE_KEY, JSON.stringify(this.state));
+        localStorage.setItem(FOCUS_RANK_STORAGE_KEY, JSON.stringify(this.state));
     }
 
     getNow() {
@@ -233,18 +234,18 @@ class DecimationProtocol {
         if (!this.tierResetTimeEl) return;
         const now = this.getNow();
         if (this.tierDescriptionEl) {
-            this.tierDescriptionEl.innerText = 'Every session lowers your Self Control Tier and enforces a mandatory cooldown.';
+            this.tierDescriptionEl.innerText = 'Every session lowers your Focus Rank and enforces a mandatory cooldown.';
         }
 
         if (!this.state.lastGameAt) {
-            this.tierResetTimeEl.innerText = 'No recent session — Tier 10 is active.';
+            this.tierResetTimeEl.innerText = 'No recent session — Rank 10 is active.';
             return;
         }
 
         const resetAt = this.state.lastGameAt + 3 * 60 * 60 * 1000;
         const remainingMs = resetAt - now;
         if (remainingMs <= 0) {
-            this.tierResetTimeEl.innerText = 'Eligible now — 3 hours of abstinence restores Tier 10.';
+            this.tierResetTimeEl.innerText = 'Eligible now — 3 hours of abstinence restores Rank 10.';
             return;
         }
 
@@ -314,9 +315,9 @@ class DecimationProtocol {
 
     updateDelayTexts(previousTier, nextTier) {
         if (this.tierDropTextEl) {
-            this.tierDropTextEl.innerText = `Self Control Tier ${previousTier} → Tier ${nextTier}`;
+            this.tierDropTextEl.innerText = `Focus Rank ${previousTier} → Rank ${nextTier}`;
         } else if (this.tierDropEl) {
-            this.tierDropEl.innerText = `Self Control Tier ${previousTier} → Tier ${nextTier}`;
+            this.tierDropEl.innerText = `Focus Rank ${previousTier} → Rank ${nextTier}`;
         }
         this.updateResetInfo();
     }

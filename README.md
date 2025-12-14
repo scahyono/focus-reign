@@ -1,14 +1,14 @@
-# Stoic Reign
+# Focus Reign
 
-Stoic Reign is a minimalist 4X-inspired browser game where you race an opposing faction to claim a procedurally generated map. Move warriors across tiles, capture territory, and reach 50% map control to win.
+Focus Reign is a minimalist 4X-inspired browser game where you race an opposing faction to claim a procedurally generated map. Move warriors across tiles, capture territory, and reach 50% map control to win.
 
 ## Play Now
-- **Web:** [Stoic Reign Demo](https://scahyono.github.io/pocket-reign/index.html)
+- **Web:** [Focus Reign Demo](https://scahyono.github.io/pocket-reign/index.html)
 
 ### Install as a PWA on Android Chrome
 1. Open the link above in Chrome on Android.
 2. Tap the **⋮** menu and choose **Add to Home screen**.
-3. Launch Stoic Reign from your home screen for a fullscreen, standalone experience.
+3. Launch Focus Reign from your home screen for a fullscreen, standalone experience.
 
 
 ## How to Play
