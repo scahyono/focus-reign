@@ -157,6 +157,9 @@ class DecimationProtocol {
         this.timerInterval = null;
 
         this.tierDropEl = document.getElementById('tier-drop');
+        this.tierInfoEl = document.getElementById('tier-info');
+        this.tierDescriptionEl = document.getElementById('tier-description');
+        this.tierResetTimeEl = document.getElementById('tier-reset-time');
         this.delayTimerEl = document.getElementById('delay-timer');
         this.playAgainBtn = document.getElementById('restart-btn');
         this.forcedModal = false;
@@ -165,7 +168,9 @@ class DecimationProtocol {
     initialize() {
         this.loadState();
         this.applyResetIfNeeded();
+        this.bindTierInfoToggle();
         this.refreshDelayUI();
+        this.updateResetInfo();
     }
 
     loadState() {
@@ -196,6 +201,57 @@ class DecimationProtocol {
             this.state.delayDurationMs = 0;
             this.saveState();
         }
+        this.updateResetInfo();
+    }
+
+    bindTierInfoToggle() {
+        if (!this.tierDropEl) return;
+        const toggle = () => this.toggleTierInfo();
+        this.tierDropEl.addEventListener('click', toggle);
+        this.tierDropEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggle();
+            }
+        });
+    }
+
+    toggleTierInfo() {
+        if (!this.tierInfoEl || !this.tierDropEl) return;
+        const willShow = this.tierInfoEl.classList.contains('hidden');
+        this.tierInfoEl.classList.toggle('hidden');
+        this.tierDropEl.setAttribute('aria-expanded', String(willShow));
+        if (willShow) {
+            this.updateResetInfo();
+        }
+    }
+
+    updateResetInfo() {
+        if (!this.tierResetTimeEl) return;
+        const now = this.getNow();
+        if (this.tierDescriptionEl) {
+            this.tierDescriptionEl.innerText = 'Every session lowers your Self Control Tier and enforces a mandatory cooldown.';
+        }
+
+        if (!this.state.lastGameAt) {
+            this.tierResetTimeEl.innerText = 'No recent session — Tier 10 is active.';
+            return;
+        }
+
+        const resetAt = this.state.lastGameAt + 3 * 60 * 60 * 1000;
+        const remainingMs = resetAt - now;
+        if (remainingMs <= 0) {
+            this.tierResetTimeEl.innerText = 'Eligible now — 3 hours of abstinence restores Tier 10.';
+            return;
+        }
+
+        const resetTimeText = new Date(resetAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+        const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+        const parts = [];
+        if (hours > 0) parts.push(`${hours}h`);
+        parts.push(`${minutes}m`);
+        this.tierResetTimeEl.innerText = `${resetTimeText} (in ${parts.join(' ')})`;
     }
 
     getDelayForTier(nextTier) {
@@ -219,6 +275,7 @@ class DecimationProtocol {
         this.saveState();
 
         this.presentDelay(currentTier, nextTier);
+        this.updateResetInfo();
     }
 
     isDelayActive() {
@@ -256,6 +313,7 @@ class DecimationProtocol {
         if (this.tierDropEl) {
             this.tierDropEl.innerText = `Self Control Tier ${previousTier} → Tier ${nextTier}`;
         }
+        this.updateResetInfo();
     }
 
     formatDuration(ms) {
@@ -273,6 +331,8 @@ class DecimationProtocol {
             if (this.delayTimerEl) {
                 this.delayTimerEl.innerText = this.formatDuration(remainingMs);
             }
+
+            this.updateResetInfo();
 
             if (remainingMs <= 0) {
                 this.finishDelay(nextTier);
