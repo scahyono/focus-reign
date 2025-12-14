@@ -23,6 +23,28 @@
         </div>
     </div>
 
+    <div id="confirmation-overlay" class="gate-overlay hidden" role="dialog" aria-modal="true">
+        <div class="gate-card">
+            <p class="gate-kicker">Focus Protocol Active</p>
+            <h2 class="gate-title">Conscious Checkpoint</h2>
+            <p class="gate-status">Your Focus Rank is <strong id="confirmation-rank">--</strong>.</p>
+            <p class="gate-timer">Time remaining until Rank 10 Reset: <strong id="confirmation-remaining">--</strong></p>
+            <div class="gate-actions">
+                <button id="confirm-continue" class="btn primary large">Acknowledge &amp; Continue to Game</button>
+                <button id="confirm-exit" class="btn secondary large">Exit &amp; Preserve Rank</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="exit-screen" class="exit-screen hidden" role="dialog" aria-modal="true">
+        <div class="exit-card">
+            <p class="gate-kicker">Focus Preserved</p>
+            <h2 class="gate-title">Disengaged Successfully</h2>
+            <p class="exit-body">Your current Focus Rank is safe. You may now safely close the app using your device's home button.</p>
+            <button id="exit-return" class="btn">Return to Game</button>
+        </div>
+    </div>
+
     <div id="game-container">
         <section id="top-section">
             <div id="branding-bar" class="panel">

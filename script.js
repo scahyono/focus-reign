@@ -168,7 +168,15 @@ class DecimationProtocol {
         this.playAgainBtn = document.getElementById('restart-btn');
         this.celebrationOverlay = document.getElementById('celebration-overlay');
         this.celebrationContinueBtn = document.getElementById('celebration-continue');
+        this.confirmationOverlay = document.getElementById('confirmation-overlay');
+        this.confirmationRankEl = document.getElementById('confirmation-rank');
+        this.confirmationRemainingEl = document.getElementById('confirmation-remaining');
+        this.confirmationContinueBtn = document.getElementById('confirm-continue');
+        this.confirmationExitBtn = document.getElementById('confirm-exit');
+        this.exitScreenEl = document.getElementById('exit-screen');
+        this.exitReturnBtn = document.getElementById('exit-return');
         this.forcedModal = false;
+        this.confirmationInterval = null;
     }
 
     initialize() {
@@ -176,8 +184,10 @@ class DecimationProtocol {
         this.applyResetIfNeeded();
         this.bindTierInfoToggle();
         this.bindCelebrationDismiss();
+        this.bindConfirmationActions();
         this.refreshDelayUI();
         this.updateResetInfo();
+        this.showConfirmationIfNeeded();
     }
 
     loadState() {
@@ -245,6 +255,90 @@ class DecimationProtocol {
         if (!this.celebrationOverlay) return;
         this.celebrationOverlay.classList.add('hidden');
         document.body.classList.remove('celebration-active');
+    }
+
+    bindConfirmationActions() {
+        if (this.confirmationContinueBtn) {
+            this.confirmationContinueBtn.addEventListener('click', () => this.hideConfirmation());
+        }
+        if (this.confirmationExitBtn) {
+            this.confirmationExitBtn.addEventListener('click', () => this.preserveAndExit());
+        }
+        if (this.exitReturnBtn) {
+            this.exitReturnBtn.addEventListener('click', () => this.returnFromExitScreen());
+        }
+    }
+
+    showConfirmationIfNeeded() {
+        if (!this.confirmationOverlay) return;
+        const remainingMs = this.getResetRemainingMs();
+        const shouldShow = this.state.lastGameAt && remainingMs > 0 && this.state.tier < 10;
+        const celebrationVisible = this.celebrationOverlay && !this.celebrationOverlay.classList.contains('hidden');
+
+        if (!shouldShow || celebrationVisible) {
+            this.hideConfirmation();
+            return;
+        }
+
+        if (this.confirmationRankEl) {
+            this.confirmationRankEl.innerText = this.state.tier || 10;
+        }
+        this.updateConfirmationRemaining(remainingMs);
+
+        this.confirmationOverlay.classList.remove('hidden');
+        document.body.classList.add('confirmation-active');
+        this.startConfirmationTimer();
+    }
+
+    hideConfirmation() {
+        if (!this.confirmationOverlay) return;
+        this.confirmationOverlay.classList.add('hidden');
+        document.body.classList.remove('confirmation-active');
+        this.stopConfirmationTimer();
+    }
+
+    startConfirmationTimer() {
+        if (this.confirmationInterval) clearInterval(this.confirmationInterval);
+        const tick = () => {
+            const remainingMs = this.getResetRemainingMs();
+            this.updateConfirmationRemaining(remainingMs);
+            if (remainingMs <= 0) {
+                this.hideConfirmation();
+            }
+        };
+        tick();
+        this.confirmationInterval = setInterval(tick, 1000);
+    }
+
+    stopConfirmationTimer() {
+        if (this.confirmationInterval) {
+            clearInterval(this.confirmationInterval);
+            this.confirmationInterval = null;
+        }
+    }
+
+    updateConfirmationRemaining(remainingMs) {
+        if (!this.confirmationRemainingEl) return;
+        this.confirmationRemainingEl.innerText = this.formatHoursMinutes(remainingMs);
+    }
+
+    preserveAndExit() {
+        this.saveState();
+        this.hideConfirmation();
+        this.showExitScreen();
+    }
+
+    showExitScreen() {
+        if (!this.exitScreenEl) return;
+        this.exitScreenEl.classList.remove('hidden');
+        document.body.classList.add('exit-active');
+    }
+
+    returnFromExitScreen() {
+        if (!this.exitScreenEl) return;
+        this.exitScreenEl.classList.add('hidden');
+        document.body.classList.remove('exit-active');
+        this.showConfirmationIfNeeded();
     }
 
     playCelebrationSound() {
@@ -317,7 +411,6 @@ class DecimationProtocol {
 
     updateResetInfo() {
         if (!this.tierResetTimeEl) return;
-        const now = this.getNow();
         if (this.tierDescriptionEl) {
             this.tierDescriptionEl.innerText = 'Every session lowers your Focus Rank and enforces a mandatory cooldown.';
         }
@@ -328,7 +421,7 @@ class DecimationProtocol {
         }
 
         const resetAt = this.state.lastGameAt + 3 * 60 * 60 * 1000;
-        const remainingMs = resetAt - now;
+        const remainingMs = this.getResetRemainingMs();
         if (remainingMs <= 0) {
             this.tierResetTimeEl.innerText = 'Eligible now — 3 hours of abstinence restores Rank 10.';
             return;
@@ -341,6 +434,20 @@ class DecimationProtocol {
         if (hours > 0) parts.push(`${hours}h`);
         parts.push(`${minutes}m`);
         this.tierResetTimeEl.innerText = `${resetTimeText} (in ${parts.join(' ')})`;
+    }
+
+    getResetRemainingMs() {
+        if (!this.state.lastGameAt) return 0;
+        const resetAt = this.state.lastGameAt + 3 * 60 * 60 * 1000;
+        const remainingMs = resetAt - this.getNow();
+        return Math.max(0, remainingMs);
+    }
+
+    formatHoursMinutes(ms) {
+        const totalMinutes = Math.max(0, Math.ceil(ms / (60 * 1000)));
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours} hours ${minutes} minutes`;
     }
 
     getDelayForTier(nextTier) {
