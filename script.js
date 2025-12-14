@@ -249,9 +249,13 @@ class DecimationProtocol {
     }
 
     clearProtection() {
+        const protectionEnd = this.state.protectionExpiresAt || this.getEndOfDayTimestamp(this.state.protectionGrantedAt);
         this.state.protectionActive = false;
         this.state.protectionExpiresAt = null;
         this.state.protectionGrantedAt = null;
+        // Anchor the next day's abstinence window to the end of the last protection period
+        // so players must complete a fresh 3-hour cooldown after midnight.
+        this.state.lastGameAt = protectionEnd;
         this.saveState();
         this.updateProtectionBadge();
     }
