@@ -810,12 +810,24 @@ class DecimationProtocol {
                 modal.classList.remove('hidden');
                 const title = document.getElementById('game-over-title');
                 const msg = document.getElementById('game-over-message');
+                const impactPanel = document.getElementById('impact-panel');
+                const impactBody = document.getElementById('impact-body');
+                const impactToggle = document.getElementById('impact-toggle');
                 if (title) {
                     title.innerText = 'Mandatory Delay';
                     title.style.color = '#ffb74d';
                 }
                 if (msg) {
                     msg.innerText = 'A secure cooldown is in effect before your next session.';
+                }
+                if (impactPanel) {
+                    impactPanel.classList.remove('hidden');
+                }
+                if (impactBody) {
+                    impactBody.classList.add('hidden');
+                }
+                if (impactToggle) {
+                    impactToggle.setAttribute('aria-expanded', 'false');
                 }
             }
             this.setPlayAgainEnabled(false);
