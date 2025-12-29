@@ -179,6 +179,26 @@ function buildFactionPool(baseFactions = FACTIONS, sleepFaction = SLEEP_FACTION)
     return [...baseFactions, sleepFaction];
 }
 
+function isSleepWindow(date = new Date()) {
+    const hours = date.getHours();
+    return hours >= 22 || hours < 6;
+}
+
+function buildRandomFactionPool({
+    baseFactions = FACTIONS,
+    sleepFaction = SLEEP_FACTION,
+    date = new Date(),
+    rng = Math.random
+} = {}) {
+    const pool = [...baseFactions];
+    const shouldIncludeSleep = isSleepWindow(date) && rng() < 0.5;
+    if (shouldIncludeSleep) {
+        pool.push(sleepFaction);
+    }
+
+    return pool;
+}
+
 function pickRandomFaction(factions, rng = Math.random) {
     if (!Array.isArray(factions) || factions.length === 0) return null;
     const idx = Math.floor(rng() * factions.length);
@@ -1030,8 +1050,8 @@ class Game {
         return buildFactionPool();
     }
 
-    getRandomFaction(rng = Math.random) {
-        const pool = this.getAvailableFactions();
+    getRandomFaction(rng = Math.random, date = new Date()) {
+        const pool = buildRandomFactionPool({ date, rng });
         const faction = pickRandomFaction(pool, rng);
         return faction ?? SLEEP_FACTION;
     }
@@ -2067,6 +2087,8 @@ if (typeof module !== 'undefined') {
         FACTIONS,
         SLEEP_FACTION,
         buildFactionPool,
+        buildRandomFactionPool,
+        isSleepWindow,
         pickRandomFaction
     };
 }
