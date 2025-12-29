@@ -181,20 +181,18 @@ function buildFactionPool(baseFactions = FACTIONS, sleepFaction = SLEEP_FACTION)
 
 function isSleepWindow(date = new Date()) {
     const hours = date.getHours();
-    return hours >= 22 || hours < 6;
+    return hours >= 22 || hours < 7;
 }
 
 function buildRandomFactionPool({
     baseFactions = FACTIONS,
     sleepFaction = SLEEP_FACTION,
-    date = new Date(),
-    rng = Math.random
+    date = new Date()
 } = {}) {
     const isNight = isSleepWindow(date);
-    const sleepRollWins = isNight && rng() < 0.5;
 
-    if (sleepRollWins) {
-        return [sleepFaction];
+    if (isNight) {
+        return [sleepFaction, ...baseFactions];
     }
 
     return [...baseFactions];
@@ -209,8 +207,25 @@ function createSequenceRng(sequence = []) {
     };
 }
 
-function pickRandomFaction(factions, rng = Math.random) {
+function pickRandomFaction(factions, rng = Math.random, {
+    date = new Date(),
+    sleepFaction = SLEEP_FACTION
+} = {}) {
     if (!Array.isArray(factions) || factions.length === 0) return null;
+
+    const hasSleepFaction = isSleepWindow(date) && factions.includes(sleepFaction);
+
+    if (hasSleepFaction) {
+        const pickSleep = rng() < 0.5;
+        if (pickSleep) return sleepFaction;
+
+        const baseFactions = factions.filter(f => f !== sleepFaction);
+        if (baseFactions.length === 0) return sleepFaction;
+
+        const idx = Math.floor(rng() * baseFactions.length);
+        return baseFactions[idx];
+    }
+
     const idx = Math.floor(rng() * factions.length);
     return factions[idx];
 }
@@ -1061,8 +1076,8 @@ class Game {
     }
 
     getRandomFaction(rng = Math.random, date = new Date()) {
-        const pool = buildRandomFactionPool({ date, rng });
-        const faction = pickRandomFaction(pool, rng);
+        const pool = buildRandomFactionPool({ date });
+        const faction = pickRandomFaction(pool, rng, { date });
         return faction ?? SLEEP_FACTION;
     }
 
