@@ -199,6 +199,15 @@ function buildRandomFactionPool({
     return pool;
 }
 
+function createSequenceRng(sequence = []) {
+    let index = 0;
+    return () => {
+        const value = sequence[index % sequence.length];
+        index += 1;
+        return value;
+    };
+}
+
 function pickRandomFaction(factions, rng = Math.random) {
     if (!Array.isArray(factions) || factions.length === 0) return null;
     const idx = Math.floor(rng() * factions.length);
@@ -2089,6 +2098,7 @@ if (typeof module !== 'undefined') {
         buildFactionPool,
         buildRandomFactionPool,
         isSleepWindow,
-        pickRandomFaction
+        pickRandomFaction,
+        createSequenceRng
     };
 }

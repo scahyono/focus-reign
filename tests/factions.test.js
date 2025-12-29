@@ -7,7 +7,8 @@ const {
     buildFactionPool,
     buildRandomFactionPool,
     isSleepWindow,
-    pickRandomFaction
+    pickRandomFaction,
+    createSequenceRng
 } = require('../script.js');
 
 test('sleep faction is always included in the pool', () => {
@@ -30,6 +31,21 @@ test('sleep faction stays out of the random pool when chance fails', () => {
     const pool = buildRandomFactionPool({ baseFactions: FACTIONS, sleepFaction: SLEEP_FACTION, date, rng });
 
     assert.ok(!pool.includes(SLEEP_FACTION), 'Sleep faction should be excluded when roll fails');
+});
+
+test('sleep faction has a 50% chance during sleep window with deterministic RNG', () => {
+    const date = new Date(2023, 0, 1, 23, 0);
+    const rng = createSequenceRng([0.1, 0.6, 0.2, 0.7, 0.3, 0.8]);
+
+    let includedCount = 0;
+    for (let i = 0; i < 6; i++) {
+        const pool = buildRandomFactionPool({ baseFactions: FACTIONS, sleepFaction: SLEEP_FACTION, date, rng });
+        if (pool.includes(SLEEP_FACTION)) {
+            includedCount += 1;
+        }
+    }
+
+    assert.strictEqual(includedCount, 3, 'Sleep faction should appear exactly when RNG falls below 0.5');
 });
 
 test('sleep faction is not included outside the nighttime window', () => {
