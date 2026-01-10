@@ -4,7 +4,8 @@ const test = require('node:test');
 const {
     computeEffectiveLastGameAt,
     getWelcomeSettingsForDay,
-    clearWelcomeSuppression
+    clearWelcomeSuppression,
+    shouldShowConfirmation
 } = require('../script.js');
 
 const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
@@ -70,4 +71,30 @@ test('clears suppression after welcome is dismissed', () => {
     const cleared = clearWelcomeSuppression(today, today);
 
     assert.strictEqual(cleared, null);
+});
+
+test('confirmation waits for welcome overlay to clear', () => {
+    const shouldShow = shouldShowConfirmation({
+        hasRecentSession: true,
+        remainingMs: 60 * 1000,
+        protectionActive: false,
+        celebrationVisible: false,
+        welcomeVisible: true,
+        welcomePending: true
+    });
+
+    assert.strictEqual(shouldShow, false);
+});
+
+test('confirmation shows when welcome is not visible or pending', () => {
+    const shouldShow = shouldShowConfirmation({
+        hasRecentSession: true,
+        remainingMs: 60 * 1000,
+        protectionActive: false,
+        celebrationVisible: false,
+        welcomeVisible: false,
+        welcomePending: false
+    });
+
+    assert.strictEqual(shouldShow, true);
 });

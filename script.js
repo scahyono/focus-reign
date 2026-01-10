@@ -233,6 +233,19 @@ function clearWelcomeSuppression(protectionSuppressedOn, todayKey) {
     return protectionSuppressedOn;
 }
 
+function shouldShowConfirmation({
+    hasRecentSession,
+    remainingMs,
+    protectionActive,
+    celebrationVisible,
+    welcomeVisible,
+    welcomePending
+}) {
+    if (!hasRecentSession || remainingMs <= 0 || protectionActive) return false;
+    if (celebrationVisible || welcomeVisible || welcomePending) return false;
+    return true;
+}
+
 function createSequenceRng(sequence = []) {
     let index = 0;
     return () => {
@@ -620,10 +633,18 @@ class DecimationProtocol {
         if (!this.confirmationOverlay) return;
         const remainingMs = this.getResetRemainingMs();
         const hasRecentSession = Boolean(this.getEffectiveLastGameAt());
-        const shouldShow = hasRecentSession && remainingMs > 0 && !this.state.protectionActive;
         const celebrationVisible = this.celebrationOverlay && !this.celebrationOverlay.classList.contains('hidden');
+        const welcomeVisible = this.welcomeOverlayEl && !this.welcomeOverlayEl.classList.contains('hidden');
+        const shouldShow = shouldShowConfirmation({
+            hasRecentSession,
+            remainingMs,
+            protectionActive: this.state.protectionActive,
+            celebrationVisible,
+            welcomeVisible,
+            welcomePending: this.shouldShowWelcome
+        });
 
-        if (!shouldShow || celebrationVisible) {
+        if (!shouldShow) {
             this.hideConfirmation();
             return;
         }
@@ -2174,6 +2195,7 @@ if (typeof module !== 'undefined') {
         createSequenceRng,
         computeEffectiveLastGameAt,
         getWelcomeSettingsForDay,
-        clearWelcomeSuppression
+        clearWelcomeSuppression,
+        shouldShowConfirmation
     };
 }
